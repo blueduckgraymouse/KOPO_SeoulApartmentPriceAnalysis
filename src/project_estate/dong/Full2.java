@@ -1,0 +1,524 @@
+package project_estate.dong;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.Duration;
+
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
+public class Full2  {
+	final static int startGuIndex = 13;
+	
+	//private static final String filePath = "c:\\KOPO\\git_tarcking\\기본프로그래밍_java\\Pro\\Data.csv";
+	private static final String WEB_DRIVER_ID = "webdriver.chrome.driver";
+	//private static final String WEB_DRIVER_PATH = "D:\\KOPO\\utility\\chromedriver_win32\\chromedriver.exe";
+	private static final String WEB_DRIVER_PATH = "C:\\KOPO\\유틸\\chromedriver_win32 (2)\\chromedriver.exe";
+
+	public static void main(String[] args) throws IOException {
+		File f = new File("C:\\KOPO\\git_tracking\\project\\estate\\data.csv");
+		BufferedWriter bw = new BufferedWriter(new FileWriter(f, true));
+	
+		try {
+			System.setProperty(WEB_DRIVER_ID, WEB_DRIVER_PATH);
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		ChromeOptions options = new ChromeOptions();
+		WebDriver driver = new ChromeDriver(options);
+		WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(1));
+		
+		driver.get("https://new.land.naver.com/complexes?ms=37.566427,126.977872,13&a=APT:ABYG:JGC&e=RETAIL");
+		
+		//int[] target = {23};
+		
+		try {
+			// 광역시 배너 클릭
+			clickSelectionCity(wait);
+			
+			// 광역시 중 서울시 선택 -> 자동으로 구 선택을 넘어감
+			selectSeoul(wait);
+			
+			// 총 구의 개수 확인
+			int guSize = checkRegionSize(driver);
+			
+			// 구 개수 만큼 반복
+			for (int i = 1 ; i <= guSize ; i++) {
+			//for (int ii = 0 ; ii < target.length ; ii++) {
+				//int i = target[ii];
+				// 서울인지 확인 다르면 처리
+				// 추가 예정
+				
+				if (driver.findElement(By.xpath("//*[@id=\"region_filter\"]/div/div")).getAttribute("aria-hidden").equals("true")) {
+					// 동 목록 열기
+					openGuSelection(wait);
+				}
+				if (i != 1) {
+					// 동 목록 열기
+					openGuSelection(wait);
+				}
+				// 구 선택 -> 자동으로 동 선택으로 넘아감
+				selectGu(wait, i);
+				String guName = getGuName(driver);
+				
+				// 총 동의 개수 확인, 26
+				int dongSize = checkRegionSize(driver);
+				
+				// 동 개수 만큼 반복
+				for (int j = 1 ; j <= dongSize ; j++) {
+//				for (int j = 1 ; j <= dongSize ; j++) {
+//					if(i==23 && j==1) {
+//						j = 86;
+//					}
+					// 두번째 동부터
+//					if(j != 1) {
+//						// 지역 확인 후 바꼈으면 재설정
+//						compareAndRearrangeGu(driver, wait, guName, i);
+//					}
+					
+					// 동 선택 -> 자동으로 단지 선택으로 넘어감
+					// 단지 목록이 닫혀잇으면
+					if (driver.findElement(By.xpath("//*[@id=\"region_filter\"]/div/div")).getAttribute("aria-hidden").equals("true")) {
+						// 동 목록 열기
+						openDongSelection(wait);
+					}
+//					if(j != 3) {
+//						openDongSelection(wait);
+//					}
+					selectDong(wait, j);
+					
+					
+					// 동이름 확인
+					String dongName = getDongName(driver);
+						
+					// 총 단지의 개수 확인
+					int complexSize = checkComplexSize(driver);
+					
+					if (complexSize == 0) {
+						closeSelection(wait);
+					}
+					
+					// 단지 개수만큼 반복
+					for (int k = 1 ; k <= complexSize ; k++) {
+//						if(i==23 && j==86 && k==1) {
+//							k = 1;
+//						}
+						// 단지 목록이 닫혀잇으면
+						if (driver.findElement(By.xpath("//*[@id=\"region_filter\"]/div/div")).getAttribute("aria-hidden").equals("true")) {
+							// 단지 목록 열기
+							openCitySelection(wait);
+						}
+						System.out.println(complexSize + " / " + k);
+						if(!(i==1 && j==1 && k==1)) {
+							selectSeoul(wait);
+							
+							selectGu(wait, i);
+						
+							selectDong(wait, j);
+						}
+						
+						// 단지 선택 - 자동으로 단지 정보로 펼쳐짐
+						selectComplex(wait, k);
+						
+						// 아파트 단지명 수집
+						String complexName = "";
+						try {
+							complexName = collectComplexName(wait);
+						} catch(Exception e) {
+							complexName = "정보 없음";
+						}
+						
+						String complexAddress = "";
+						try {
+							 //complexAddress = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"detailContents1\"]/div[1]/table/tbody/tr[7]/td/p[1]"))).getText();
+							 complexAddress = wait.until(ExpectedConditions.presenceOfElementLocated(By.className("address"))).getText();
+							 //System.out.println(complexAddress);
+						} catch (Exception e) {
+							
+						}
+																												 //*[@id="detailContents1"]/div[2]/table/tbody/tr[7]/td/p[1]
+						// 가격순 정렬 버튼이 안 눌려있으면 클릭하여 낮은가격순으로 변경
+						WebElement priceSort = driver.findElement(By.xpath("//*[@id=\"complexOverviewList\"]/div[2]/div[1]/div[3]/a[3]"));
+						if (priceSort.getAttribute("aria-pressed").equals("false")) {
+							wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"complexOverviewList\"]/div[2]/div[1]/div[3]/a[3]"))).click();
+						}
+						// 가격순이 높은 가격 순이면 클릭하여 낮은 가격순으로 변경
+						if (priceSort.getAttribute("class").equals("sorting_type is-descending")) {
+							wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"complexOverviewList\"]/div[2]/div[1]/div[3]/a[3]"))).click();
+						}
+						
+					/* 매매 조사 */
+						int minSaleSize = 0;			// 현재 등록된 최저가 매물의 가격
+						int minSalePrice = 0;			// 현재 등록된 최저가 매물의 면적 
+						int recentRealSalePrice = 0;	// 해당 최저가 매물과 같은 면적의 최근 실거래 가격
+						int recentRealSaleDate = 0;		// 해당 최저가 매물과 같은 면적의 최근 실거래 날짜
+						
+						/* 거래방식 매매로 설정 */
+						// 전체거래방식 클릭하여 선택지 열기
+						wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"complexOverviewList\"]/div[2]/div[1]/div[2]/div/div[1]/button/span"))).click();
+
+						// 전체거래방식 매매로 선택 - 선택지목록은 계속 열려 있다.
+						wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"complexOverviewList\"]/div[2]/div[1]/div[2]/div/div[1]/div/div/ul/li[2]/label"))).click();
+						// 선택지 목록 닫기
+						wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"complexOverviewList\"]/div[2]/div[1]/div[2]/div/div[1]/div/button/i"))).click();
+						
+						/* 면적 범위설정 전 임시 최저가 임시 저장 */
+						int tempSaleSize = 0;
+						int tempSalePriceNum = 0;
+						int tempRecentRealSalePrice = 0;
+						int tempRecentRealSaleDate = 0;	
+						
+						try {
+							String tempSaleInfo = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"articleListArea\"]/div[1]/div/a/div[3]/p[1]/span"))).getText();	//  "79A/59m², 중/27층, 남동향"
+							tempSaleSize = Integer.parseInt(tempSaleInfo.split(",")[0].split("/")[0].replaceAll("[^0-9]", ""));																	//  79
+							
+							String tempSalePriceKor = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"articleListArea\"]/div[1]/div/a/div[2]/span[2]"))).getText();	// "21억 5,000"
+							tempSalePriceNum = Integer.parseInt(tempSalePriceKor.replace(",", "").replace("억", "").replace(" ", ""));															// 215000
+							// 최근 실거래가 / 실거래 날짜 확인					
+							try {	// 실거래가가 있는 경우
+								// 클릭하여 상세 정보 열기			
+								wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"articleListArea\"]/div[1]/div/a[2]"))).click();
+								// "시세/실거래가" 배너 클릭
+								wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("/html/body/div[2]/div/section/div[2]/div[2]/div/div[2]/div[2]/div[2]/div/a[2]/span"))).click();
+								tempRecentRealSalePrice = Integer.parseInt(wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"tabpanel1\"]/div[4]/table/tbody/tr[1]/td/div/div/span"))).getText().split("\\(")[0].replace(",", "").replace("억", "").replace(" ", ""));
+								tempRecentRealSaleDate = Integer.parseInt(wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"tabpanel1\"]/div[4]/table/tbody/tr[1]/th"))).getText().replaceAll("\\.", ""));
+							} catch (Exception e) {		// 실거래가가 없는 경우
+								//System.out.println("  임시 최저가 매매 최근 실거래가 / 실거래 날짜 없음. 0으로 저장.");
+							}
+						} catch (Exception e) { // 매물이 하나도 없음
+							//bw.write(guName + "," + dongName + "," + complexName.replaceAll(",", "") + ",-,-,-,-,-,-,-,-");
+							//continue;
+							//System.out.println("  매매 하나도 없음. 모두 0으로 저장.");
+						}
+						
+						
+						
+						/* 면적 선택하여 최저가 확인 */
+						// 전체 면적 선택하여 선택지 열기
+						wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"complexOverviewList\"]/div[2]/div[1]/div[2]/div/div[2]/button/span"))).click();
+						// 전체 면적 선택 (75 ~85) - 범위가 없을 시 전체 선택이 유지된다.
+						int sizeIndex = 1;
+						while (true) {
+							try {
+								int sizeOption = Integer.parseInt(wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"complexOverviewList\"]/div[2]/div[1]/div[2]/div/div[2]/div/div/ul/li[" + sizeIndex + "]/label"))).getText().replaceAll("[^0-9]", ""));
+								if ( 75 <= sizeOption && sizeOption <= 85) {
+									wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"complexOverviewList\"]/div[2]/div[1]/div[2]/div/div[2]/div/div/ul/li[" + sizeIndex + "]/label"))).click();
+								}
+							} catch (Exception e) {	// 모든 면적 옵션을 확인하면 종료
+								break;
+							}
+						}
+						// 선택지 닫기
+						wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"complexOverviewList\"]/div[2]/div[1]/div[2]/div/div[2]/div/button/i"))).click();
+
+						// 목표한 범위 내에 존재하는 최저가 가격과 면적 가져오기
+						try {		// 범위 내에 매물이 있는 경우
+							String minSaleInfo = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"articleListArea\"]/div[1]/div/a/div[3]/p[1]/span"))).getText();
+							minSaleSize = Integer.parseInt(minSaleInfo.split(",")[0].split("/")[0].replaceAll("[^0-9]", ""));
+							
+							String minSalePriceKor = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"articleListArea\"]/div[1]/div/a/div[2]/span[2]"))).getText();
+							minSalePrice = Integer.parseInt(minSalePriceKor.replace(",", "").replace("억", "").replace(" ", ""));
+							
+							// 최근 실거래가 확인
+							try {	// 실거래가가 있는 경우
+								
+								// 클릭하여 상세정보 보기
+								wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"articleListArea\"]/div[1]/div/a[2]"))).click();
+								// "시세/실거래가" 배너 클릭
+								wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("/html/body/div[2]/div/section/div[2]/div[2]/div/div[2]/div[2]/div[2]/div/a[2]/span"))).click();
+								recentRealSalePrice = Integer.parseInt(wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"tabpanel1\"]/div[4]/table/tbody/tr[1]/td/div/div/span"))).getText().split("\\(")[0].replace(",", "").replace("억", "").replace(" ", ""));
+								recentRealSaleDate = Integer.parseInt(wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"tabpanel1\"]/div[4]/table/tbody/tr[1]/th"))).getText().replaceAll("\\.", ""));
+							} catch (Exception e) {		// 실거래가가 없는 경우
+								//System.out.println("  목표한 면적의 매매 최근 실거래가 / 날짜 없음. 0으로 저장.");
+							}
+						} catch(Exception e) {	// 범위 내에 매물이 없는 경우
+							minSaleSize = tempSaleSize;
+							minSalePrice = tempSalePriceNum;
+							recentRealSalePrice = tempRecentRealSalePrice;
+							recentRealSaleDate = tempRecentRealSaleDate;
+							//System.out.println("  수집하고자 한 면적의 매매 없음 - 전체 매매 중 최소 면적 / 최저가 매물(임시 최저가)로 모든 데이터 저장");
+						}
+						
+						
+						
+						
+						
+					/* 전세 조사 */
+						int minRentSize = 0;			// 현재 등록된 최저가 전세의 가격
+						int minRentPrice = 0;			// 현재 등록된 최저가 전세의 면적 
+						int recentRealRentPrice = 0;	// 해당 최저가 전세와 같은 면적의 최근 실거래 가격
+						int recentRealRentDate = 0;		// 해당 최저가 전세와 같은 면적의 최근 실거래 날짜
+						
+						/* 전체거래방식 전세로 변경 */
+						// 전체거래방식 목록지 열기
+						wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"complexOverviewList\"]/div[2]/div[1]/div[2]/div/div[1]/button/span"))).click();
+						// 체크되있는 매매 체크 풀기
+						wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"complexOverviewList\"]/div[2]/div[1]/div[2]/div/div[1]/div/div/ul/li[2]/label"))).click();
+						// 전세 체크 하기
+						wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"complexOverviewList\"]/div[2]/div[1]/div[2]/div/div[1]/div/div/ul/li[3]/label"))).click();
+
+//						/* 면적 범위설정 전 임시 최저가 임시 저장 */
+//						int tempRentSize = 0;
+//						int tempRentPriceNum = 0;
+//						int tempRecentRealRentPrice = 0;
+//						int tempRecentRealRentDate = 0;	
+//						try {
+//							String tempSaleInfo = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"articleListArea\"]/div[1]/div/a/div[3]/p[1]/span"))).getText();	//  "79A/59m², 중/27층, 남동향"
+//							tempRentSize = Integer.parseInt(tempSaleInfo.split(",")[0].split("/")[0].replaceAll("[^0-9]", ""));																	//  79
+//							
+//							String tempRentPriceKor = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"articleListArea\"]/div[1]/div/a/div[2]/span[2]"))).getText();	// "21억 5,000"
+//							tempRentPriceNum = Integer.parseInt(tempRentPriceKor.replace(",", "").replace("억", "").replace(" ", ""));															// 215000
+//						} catch (Exception e) { // 전세 하나도 없음
+//							//System.out.println("  1-1-1. 전세 하나도 없음. 모두 0으로 저장.");
+//						}
+//						
+//						/* 면적 범위설정 전 임시 최저가의 최근 실거래가 확인 */					
+//						try {	// 실거래가가 있는 경우
+//							// 클릭하여 상세 정보 열기
+//							wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"articleListArea\"]/div[1]/div/a[2]/div[1]/span[2]"))).click();
+//							// "시세/실거래가" 배너 클릭
+//							wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"detailTab2\"]/span"))).click();
+//							tempRecentRealRentPrice = Integer.parseInt(wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"tabpanel1\"]/div[4]/table/tbody/tr[1]/td/div/div/span"))).getText().split("\\(")[0].replace(",", "").replace("억", "").replace(" ", ""));
+//							tempRecentRealRentDate = Integer.parseInt(wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"tabpanel1\"]/div[4]/table/tbody/tr[1]/th"))).getText().replaceAll("\\.", ""));
+//						} catch (Exception e) {		// 실거래가가 없는 경우
+//							//System.out.println("  1-1-2. 임시 최저가 매매 최근 실거래가 / 실거래 날짜 없음. 0으로 저장.");
+//						}
+//						
+//						
+//						/* 면적 선택하여 최저가 확인 */
+//						// 전체 면적 선택하여 선택지 열기
+//						wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"complexOverviewList\"]/div[2]/div[1]/div[2]/div/div[2]/button/span"))).click();
+//						// 전체 면적 선택 (75 ~85) - 범위가 없을 시 전체 선택이 유지된다.
+//						sizeIndex = 1;
+//						while (true) {
+//							try {
+//								int sizeOption = Integer.parseInt(wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"complexOverviewList\"]/div[2]/div[1]/div[2]/div/div[2]/div/div/ul/li[" + sizeIndex + "]/label"))).getText().replaceAll("[^0-9]", ""));
+//								if ( 75 <= sizeOption && sizeOption <= 85) {
+//									wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"complexOverviewList\"]/div[2]/div[1]/div[2]/div/div[2]/div/div/ul/li[" + sizeIndex + "]/label"))).click();
+//								}
+//							} catch (Exception e) {
+//								break;
+//							}
+//						}
+						
+						try {	// 목표한 면적의 매물이 존재하는 경우
+							// 목표한 범위 내에 존재하는 최저가 가격과 면적 가져오기
+							try {		// 범위 내에 매물이 있는 경우
+								String minRentInfo = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"articleListArea\"]/div[1]/div/a/div[3]/p[1]/span"))).getText();
+								minRentSize = Integer.parseInt(minRentInfo.split(",")[0].split("/")[0].replaceAll("[^0-9]", ""));
+								
+								String minRentPriceKor = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"articleListArea\"]/div[1]/div/a/div[2]/span[2]"))).getText();
+								minRentPrice = Integer.parseInt(minRentPriceKor.replace(",", "").replace("억", "").replace(" ", ""));
+								
+								// 최근 실거래가 확인
+								try {	// 실거래가가 있는 경우
+									// 클릭하여 상세정보 보기
+									wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"articleListArea\"]/div[1]/div/a[2]"))).click();
+									
+									// "시세/실거래가" 배너 클릭
+									wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("/html/body/div[2]/div/section/div[2]/div[2]/div/div[2]/div[2]/div[2]/div/a[2]/span"))).click();
+									recentRealRentPrice = Integer.parseInt(wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"tabpanel1\"]/div[4]/table/tbody/tr[1]/td/div/div/span"))).getText().split("\\(")[0].replace(",", "").replace("억", "").replace(" ", ""));
+									recentRealRentDate = Integer.parseInt(wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"tabpanel1\"]/div[4]/table/tbody/tr[1]/th"))).getText().replaceAll("\\.", ""));
+								} catch (Exception e) {		// 실거래가가 없는 경우
+									//System.out.println("  목표한 면적의 전세 최근 실거래가 / 날짜 없음. 0으로 저장.");
+								}
+							} catch(Exception e) {	// 범위 내에 매물이 없는 경우
+								throw e;
+							}
+							
+						} catch (Exception e) { // 목표한 면적의 매물이 존재하지 않는 경우 - 전체 범위에서 데이터 수집
+							// 전체면적 선택지 열기
+							wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"complexOverviewList\"]/div[2]/div[1]/div[2]/div/div[2]/button/span"))).click();
+							// 전체면적 전체로 선택하기
+							wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"complexOverviewList\"]/div[2]/div[1]/div[2]/div/div[2]/div/div/ul/li[1]/label"))).click();
+							
+							try { // 매물이 존재하는 경우
+								String minSaleInfo = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"articleListArea\"]/div[1]/div/a/div[3]/p[1]/span"))).getText();	//  "79A/59m², 중/27층, 남동향"
+								minRentSize = Integer.parseInt(minSaleInfo.split(",")[0].split("/")[0].replaceAll("[^0-9]", ""));																	//  79
+								
+								String minRentPriceKor = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"articleListArea\"]/div[1]/div/a/div[2]/span[2]"))).getText();	// "21억 5,000"
+								minRentPrice = Integer.parseInt(minRentPriceKor.replace(",", "").replace("억", "").replace(" ", ""));															// 215000
+							} catch (Exception ex) { // 전세 하나도 없음
+								//System.out.println("  전세 하나도 없음. 모두 0으로 저장.");
+							}
+							
+							/* 면적 범위설정 전 임시 최저가의 최근 실거래가 확인 */					
+							try {	// 실거래가가 있는 경우
+								// 클릭하여 상세정보 보기
+								wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"articleListArea\"]/div[1]/div/a[2]"))).click();
+								// "시세/실거래가" 배너 클릭
+								wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("/html/body/div[2]/div/section/div[2]/div[2]/div/div[2]/div[2]/div[2]/div/a[2]/span"))).click();
+								recentRealRentPrice = Integer.parseInt(wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"tabpanel1\"]/div[4]/table/tbody/tr[1]/td/div/div/span"))).getText().split("\\(")[0].replace(",", "").replace("억", "").replace(" ", ""));
+								recentRealRentDate = Integer.parseInt(wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"tabpanel1\"]/div[4]/table/tbody/tr[1]/th"))).getText().replaceAll("\\.", ""));
+							} catch (Exception ex) {		// 실거래가가 없는 경우
+								//System.out.println("  임시 최저가 전세 최근 실거래가 / 실거래 날짜 없음. 0으로 저장.");
+							}
+						}
+						
+
+						// 저장할 필드 : 지역구 / 지역동 / 아파트명 / 아파트주소 // 최저가 매매 / 최저가 매매의 면적 / 최저가 매매의 최근 실거래가 / 최저가 매매의 최근 거래날짜 // 최저가 전세 / 최저가 전세의 면적 / 최저가 전세의 최근 실거래가 / 최저가 전세의 최근 거래 날짜
+						bw.write(guName + "," + dongName + "," + complexName.replaceAll(",", "") + "," + complexAddress + "," + minSaleSize + "," + minSalePrice + "," + recentRealSalePrice + "," + recentRealSaleDate + "," + minRentSize + ","  + minRentPrice + "," +  recentRealRentPrice + "," + recentRealRentDate);
+						System.out.println("* " + guName + "," + dongName + "," + complexName.replaceAll(",", "") + "," + complexAddress + "," + minSaleSize + "," + minSalePrice + "," + recentRealSalePrice + "," + recentRealSaleDate + "," + minRentSize + ","  + minRentPrice + "," +  recentRealRentPrice + "," + recentRealRentDate);
+						System.out.println("---------------------------------------");
+						bw.newLine();
+						
+						// 현재 단지 닫기
+						closeComplexInformation(wait);
+					}
+				}
+			}
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+
+		bw.flush();
+		bw.close();
+	}
+	
+//	private static int checkRegionSize(WebDriver driver) {
+//		return driver.findElements(By.xpath("//*[@class=\"area_item\"]")).size();
+//	}
+	
+	private static void closeSelection(WebDriverWait wait) {
+		wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"region_filter\"]/div/a/span[3]"))).click();
+		wait500ms();
+		//wait500ms();
+		//wait500ms();
+	}
+
+	private static String collectComplexScale(WebDriverWait wait) {
+		return wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"summaryInfo\"]/dl"))).getText();
+	}
+	
+	private static String collectComplexPriceRange(WebDriverWait wait) {
+		return wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"summaryInfo\"]/div[2]/div[1]/div/dl[1]/dd"))).getText();
+	}
+	
+	private static String collectComplexName(WebDriverWait wait) {
+		return wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"complexTitle\"]"))).getText();
+	}
+	
+//	private static void openComplexSelection(WebDriverWait wait) {
+//		wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("/html/body/div[2]/div/section/div[2]/div[2]/div[1]/div/div/a/span[4]"))).click();
+//		wait500ms();
+//	}
+//
+//	private static void compareAndRearrangeDong(WebDriver driver, WebDriverWait wait, String dongName, int j) {
+//		String CurrentDongName = driver.findElement(By.xpath("//*[@id=\"region_filter\"]/div/a/span[3]")).getText();
+//		if (!dongName.equals(CurrentDongName)) {
+//			openDongSelection(wait);
+//			selectDong(wait, j);
+//		}
+//	}
+
+	private static void openDongSelection(WebDriverWait wait) {
+		wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"region_filter\"]/div/a/span[3]"))).click();
+		wait500ms();
+	}
+
+	private static void compareAndRearrangeGu(WebDriver driver, WebDriverWait wait, String guName, int i) {
+		String CurrentGuName = driver.findElement(By.xpath("//*[@id=\"region_filter\"]/div/a/span[2]")).getText();
+		if (!guName.equals(CurrentGuName)) {
+			openGuSelection(wait);
+			selectGu(wait, i);
+		}
+	}
+
+	private static void openGuSelection(WebDriverWait wait) {
+		wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"region_filter\"]/div/a/span[2]"))).click();
+		wait500ms();
+	}
+	
+	private static void openCitySelection(WebDriverWait wait) {
+		wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"region_filter\"]/div/a/span[1]"))).click();
+		wait500ms();
+	}
+
+	private static String getDongName(WebDriver driver) {
+		String dongName = driver.findElement(By.xpath("//*[@id=\"region_filter\"]/div/div/div[1]/div/a[3]")).getText();
+		wait500ms();
+		return dongName;
+	}
+
+	private static String getGuName(WebDriver driver) {
+		String guName = driver.findElement(By.xpath("//*[@id=\"region_filter\"]/div/div/div[1]/div/a[2]")).getText();
+		wait500ms();
+		return guName;
+	}
+
+	private static void closeComplexInformation(WebDriverWait wait) {
+		wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("/html/body/div[2]/div/section/div[2]/div[2]/div/button"))).click();
+		wait500ms();
+	}
+
+	private static String collectDistance(WebDriverWait wait) {
+		String distance = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"detailContents5\"]/div/div[1]"))).getText();
+		wait500ms();
+		return distance;
+	}
+
+	private static void clickSchoolDistrict(WebDriver driver, WebDriverWait wait) {
+		int size = driver.findElements(By.xpath("/html/body/div[2]/div/section/div[2]/div[2]/div/div[2]/div[2]/div/div/a")).size();
+		for(int i = 1 ; i <= size ; i++) {
+			String content = driver.findElement(By.xpath("/html/body/div[2]/div/section/div[2]/div[2]/div/div[2]/div[2]/div/div/a[" + i + "]/span")).getText();
+			if(content.equals("학군정보")) {
+				wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("/html/body/div[2]/div/section/div[2]/div[2]/div/div[2]/div[2]/div/div/a[" + i + "]"))).click();
+				wait500ms();
+				break;
+			}
+		}
+	}
+
+	private static void selectComplex(WebDriverWait wait, int k) {
+		//wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("/html/body/div[2]/div/section/div[2]/div/div[1]/div/div/div/div[3]/ul/li[" + k + "]/a"))).click();
+		wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"region_filter\"]/div/div/div[3]/ul/li[" + k + "]/a"))).click();
+		wait500ms();
+	}
+	
+	private static int checkComplexSize(WebDriver driver) {
+		
+		return driver.findElements(By.xpath("//*[@id=\"region_filter\"]/div/div/div[3]/ul/li")).size();
+	}
+	
+	private static void selectDong(WebDriverWait wait, int j) {
+		wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("/html/body/div[2]/div/section/div[2]/div/div[1]/div/div/div/div[2]/ul/li[" + j + "]/label"))).click();
+		wait500ms();
+	}
+
+	private static int checkRegionSize(WebDriver driver) {
+		return driver.findElements(By.xpath("//*[@class=\"area_item\"]")).size();
+	}
+
+	private static void clickSelectionCity(WebDriverWait wait) {
+		//wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("/html/body/div[2]/div/section/div[2]/div/div[1]/div/div/a/span[1]"))).click();
+		wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"region_filter\"]/div/a/span[1]"))).click();
+		wait500ms();
+	}
+
+	private static void selectSeoul(WebDriverWait wait) {
+		wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("/html/body/div[2]/div/section/div[2]/div/div[1]/div/div/div/div[2]/ul/li[1]/label"))).click();
+		wait500ms();
+	}
+
+	public static void selectGu(WebDriverWait wait, int guIndex) {
+		wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("/html/body/div[2]/div/section/div[2]/div/div[1]/div/div/div/div[2]/ul/li[" + guIndex + "]/label"))).click();
+		wait500ms();
+	}
+	
+	public static void wait500ms() {
+		try {
+			Thread.sleep(500);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+}
