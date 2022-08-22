@@ -16,7 +16,7 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
-public class Full5  {
+public class Full_work  {
 	final static int startGuIndex = 13;
 	
 	//private static final String filePath = "c:\\KOPO\\git_tarcking\\기본프로그래밍_java\\Pro\\Data.csv";
@@ -109,7 +109,7 @@ public class Full5  {
 					}
 					
 					// 단지 개수만큼 반복
-					for (int k = 14 ; k <= complexSize ; k++) {
+					for (int k = 1 ; k <= complexSize ; k++) {
 //						if(i==23 && j==86 && k==1) {
 //							k = 1;
 //						}
@@ -121,7 +121,7 @@ public class Full5  {
 						System.out.println(complexSize + " / " + k);
 
 						//if (!(i==1 && j==3 && k==1)) {
-						if (!(k==14)) {
+						if (!(k==1)) {
 							selectSeoul(wait);
 							
 							selectGu(wait, i);
@@ -158,7 +158,7 @@ public class Full5  {
 						 
 						
 						/* 면적마다 최저가 확인 */
-						int indexSize = 6; //default 2
+						int indexSize = 2; //default 2
 						while (true) {	// 면적 반복
 							try {
 								/* 거래방식 : 매매  */
@@ -191,7 +191,7 @@ public class Full5  {
 								wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"complexOverviewList\"]/div[2]/div[1]/div[2]/div/div[2]/div/div/ul/li[" + indexSize + "]/label"))).click();
 								wait200ms();
 								// 이전 선택된 면적 옵션 클릭하여 해제
-								if (indexSize != 6) {
+								if (indexSize != 2) {
 									wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id=\"complexOverviewList\"]/div[2]/div[1]/div[2]/div/div[2]/div/div/ul/li[" + (indexSize - 1) + "]/label"))).click();
 									wait200ms();
 								}
